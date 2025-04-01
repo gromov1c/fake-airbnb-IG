@@ -1,0 +1,23 @@
+/* Add any additional style as necessary*/
+  
+.modal-body {
+    display: flex;
+  }
+  
+
+
+  .modal-footer{
+    display:block;
+  }
+
+  .card img {
+    width: 100%;
+
+    aspect-ratio: 1 / 1; /* Keeps it square */
+    object-fit: cover;
+    /*margin: auto;*/
+  }
+
+  #modal-img img{
+    width: 100%
+  }

@@ -1,6 +1,5 @@
 $(document).ready(function () {
     $('.viewListing').click(function () {
-      // Get the listing ID from the button's id attribute
       var listingId = $(this).attr('id');
   
       $.ajax({
@@ -17,10 +16,8 @@ $(document).ready(function () {
             return;
           }
   
-          // Populate the modal title
           $('#modal-title').text(response.name);
   
-          // Build modal content with the image on top and text below in a container
           var modalContent = `
             <div class="container-fluid">
               <div class="row">
@@ -41,7 +38,6 @@ $(document).ready(function () {
             </div>
           `;
   
-          // Insert the built HTML into the modal body
           $('#modal-body').html(modalContent);
         },
         error: function (xhr, status, error) {

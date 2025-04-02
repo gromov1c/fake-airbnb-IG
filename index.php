@@ -1,26 +1,20 @@
 <?php
-// 1. Connect to the database (update these parameters as needed)
 $servername = "mysqlServer";
-$username = "fakeAirbnbUser";
-$password = "apples11Million";
-$dbname = "fakeAirbnb";
+$username   = "fakeAirbnbUser";
+$password   = "apples11Million";
+$dbname     = "fakeAirbnb";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// 2. Query the neighborhoods table (alphabetical by neighborhood name)
 $neighborhood_sql = "SELECT id, neighborhood 
                      FROM neighborhoods 
                      ORDER BY neighborhood ASC";
 $neighborhood_result = $conn->query($neighborhood_sql);
 
-// 3. Query the listings table for distinct roomTypeId (if that’s how you store room types)
-$roomtype_sql = "SELECT DISTINCT roomTypeId 
-                 FROM listings 
-                 WHERE roomTypeId IS NOT NULL
-                 ORDER BY roomTypeId ASC";
+$roomtype_sql = "SELECT id, type FROM roomTypes ORDER BY type ASC";
 $roomtype_result = $conn->query($roomtype_sql);
 ?>
 <!doctype html>
@@ -56,7 +50,7 @@ $roomtype_result = $conn->query($roomtype_sql);
         <div class="container">
           <a href="index.php" class="navbar-brand d-flex align-items-center">
             <i class="bi bi-house-heart-fill my-2"></i>    
-            <strong>Fake Airbnb</strong>
+            <strong> Fake Airbnb</strong>
           </a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                   data-bs-target="#navbarHeader" aria-controls="navbarHeader"
@@ -71,10 +65,8 @@ $roomtype_result = $conn->query($roomtype_sql);
       <div class="album py-5 bg-light">
         <div class="container">
           <h1>Find a Listing</h1>
-          <!-- Search Form -->
           <form action="results.php" method="GET">
             
-            <!-- Neighborhood (from neighborhoods table) -->
             <div class="mb-3">
               <label for="neighborhood" class="form-label">Neighborhood</label>
               <select class="form-select" id="neighborhood" name="neighborhood_id">
@@ -93,7 +85,6 @@ $roomtype_result = $conn->query($roomtype_sql);
               </select>
             </div>
 
-            <!-- Room Type (from listings.roomTypeId) -->
             <div class="mb-3">
               <label for="roomTypeId" class="form-label">Room Type</label>
               <select class="form-select" id="roomTypeId" name="roomTypeId">
@@ -101,8 +92,9 @@ $roomtype_result = $conn->query($roomtype_sql);
                 <?php
                   if ($roomtype_result && $roomtype_result->num_rows > 0) {
                     while ($row = $roomtype_result->fetch_assoc()) {
-                      $value = htmlspecialchars($row['roomTypeId']);
-                      echo "<option value=\"$value\">Room Type #$value</option>";
+                      $id    = htmlspecialchars($row['id']);
+                      $type  = htmlspecialchars($row['type']);
+                      echo "<option value=\"$id\">$type</option>";
                     }
                   } else {
                     echo '<option value="">No room types available</option>';
@@ -111,12 +103,10 @@ $roomtype_result = $conn->query($roomtype_sql);
               </select>
             </div>
 
-            <!-- Number of Guests -->
             <div class="mb-3">
               <label for="guests" class="form-label">Number of Guests</label>
               <select class="form-select" id="guests" name="guests">
                 <?php
-                  // Just show 1-10 in a dropdown
                   foreach (range(1, 10) as $num) {
                     echo "<option value=\"$num\">$num</option>";
                   }
@@ -126,15 +116,15 @@ $roomtype_result = $conn->query($roomtype_sql);
 
             <button type="submit" class="btn btn-primary">Search Listings</button>
           </form>
-        </div><!-- .container-->
-      </div><!-- .album-->
+        </div>
+      </div>
     </main>
 
     <footer class="text-muted py-5">
       <div class="container">
         <p class="mb-1">CS 293, Spring 2025</p>
         <p class="mb-1">Lewis & Clark College</p>
-      </div><!-- .container-->
+      </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
@@ -146,6 +136,5 @@ $roomtype_result = $conn->query($roomtype_sql);
   </body>
 </html>
 <?php
-// Close the database connection
 $conn->close();
 ?>

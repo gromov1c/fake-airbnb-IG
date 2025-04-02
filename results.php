@@ -1,5 +1,4 @@
 <?php
-// 1. Connect to the database
 $servername = "mysqlServer";
 $username   = "fakeAirbnbUser";
 $password   = "apples11Million";
@@ -10,13 +9,10 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// 2. Retrieve GET parameters from index.php
 $neighborhood_id = isset($_GET['neighborhood_id']) ? $_GET['neighborhood_id'] : '';
 $roomTypeId      = isset($_GET['roomTypeId'])      ? $_GET['roomTypeId']      : '';
 $guests          = isset($_GET['guests'])          ? (int)$_GET['guests']     : 1;
 
-// 3. Build the SQL query.
-//    We join listings with neighborhoods and roomTypes via their integer IDs.
 $query = "
     SELECT 
         l.*,
@@ -28,26 +24,48 @@ $query = "
     WHERE 1 = 1
 ";
 
-// 4. Filter by neighborhood (if user selected one)
 if (!empty($neighborhood_id)) {
     $escaped_nid = $conn->real_escape_string($neighborhood_id);
     $query      .= " AND l.neighborhoodId = '{$escaped_nid}'";
 }
 
-// 5. Filter by room type (if user selected one)
 if (!empty($roomTypeId)) {
     $escaped_rid = $conn->real_escape_string($roomTypeId);
     $query      .= " AND l.roomTypeId = '{$escaped_rid}'";
 }
 
-// 6. Filter by accommodates (>= the chosen number)
 $query .= " AND l.accommodates >= " . intval($guests);
 
-// 7. Limit results to 20
 $query .= " LIMIT 20";
 
-// 8. Execute the query
 $result = $conn->query($query);
+$numResults = ($result) ? $result->num_rows : 0;
+
+if (!empty($neighborhood_id)) {
+    $sqlN = "SELECT neighborhood FROM neighborhoods WHERE id = " . (int)$neighborhood_id . " LIMIT 1";
+    $resN = $conn->query($sqlN);
+    if ($resN && $resN->num_rows > 0) {
+        $rowN = $resN->fetch_assoc();
+        $displayNeighborhood = htmlspecialchars($rowN['neighborhood']);
+    } else {
+        $displayNeighborhood = "Any";
+    }
+} else {
+    $displayNeighborhood = "Any";
+}
+
+if (!empty($roomTypeId)) {
+    $sqlR = "SELECT type FROM roomTypes WHERE id = " . (int)$roomTypeId . " LIMIT 1";
+    $resR = $conn->query($sqlR);
+    if ($resR && $resR->num_rows > 0) {
+        $rowR = $resR->fetch_assoc();
+        $displayRoomType = htmlspecialchars($rowR['type']);
+    } else {
+        $displayRoomType = "Any";
+    }
+} else {
+    $displayRoomType = "Any";
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -93,57 +111,60 @@ $result = $conn->query($query);
       </div>
     </header>
 
-    <main>
-      <div class="container py-5">
-        <h1>Listings</h1>
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
-          <?php
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    // Extract data from each row
-                    // Adjust column names if they differ in your schema
-                    $listing_id     = htmlspecialchars($row['id']);
-                    // e.g., you might have 'pictureUrl' instead of 'image_url'
-                    $image_url      = htmlspecialchars($row['pictureUrl']);    
-                    $name           = htmlspecialchars($row['name']);
-                    $price          = htmlspecialchars($row['price']);
-                    $accommodates   = htmlspecialchars($row['accommodates']);
-                    $rating         = htmlspecialchars($row['rating']);
-                    // From the joins:
-                    $neighborhood   = htmlspecialchars($row['neighborhoodName']); 
-                    $roomType       = htmlspecialchars($row['roomTypeName']);
-          ?>
-                    <div class="col">
-                      <div class="card shadow-sm">
-                        <img src="<?php echo $image_url; ?>" class="card-img-top" alt="<?php echo $name; ?>">
-                        <div class="card-body">
-                          <h5 class="card-title"><?php echo $name; ?></h5>
-                          <p class="card-text"><?php echo $neighborhood; ?></p>
-                          <p class="card-text"><?php echo $roomType; ?></p>
-                          <p class="card-text">Accommodates <?php echo $accommodates; ?></p>
-                          <p class="card-text">
-                            <i class="bi bi-star-fill"></i> <?php echo $rating; ?>
-                          </p>
-                          <div class="d-flex justify-content-between align-items-center">
-                            <div class="btn-group">
-                              <button type="button" id="<?php echo $listing_id; ?>" 
-                                      class="btn btn-sm btn-outline-secondary viewListing" 
-                                      data-bs-toggle="modal" data-bs-target="#fakeAirbnbnModal">
-                                View
-                              </button>
-                            </div>
-                            <small class="text-muted">$<?php echo $price; ?></small>
-                          </div>
-                        </div>
-                      </div><!-- .card -->
-                    </div><!-- .col -->
-          <?php
-                } // end while
-            } else {
-                echo "<p>No listings found matching your criteria.</p>";
-            }
-          ?>
-        </div><!-- .row -->
+    <main class="py-5">
+      <div class="container">
+        
+        <h1>Results (<?php echo $numResults; ?>)</h1>
+        <p><strong>Neighborhood:</strong> <?php echo $displayNeighborhood; ?></p>
+        <p><strong>Room Type:</strong> <?php echo $displayRoomType; ?></p>
+        <p><strong>Accommodates:</strong> <?php echo $guests; ?></p>
+
+        <?php if ($numResults > 0): ?>
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+            <?php
+              $result->data_seek(0);
+
+              while ($row = $result->fetch_assoc()) {
+                  $listing_id     = htmlspecialchars($row['id']);
+                  $image_url      = htmlspecialchars($row['pictureUrl']);    
+                  $name           = htmlspecialchars($row['name']);
+                  $price          = htmlspecialchars($row['price']);
+                  $accommodates   = htmlspecialchars($row['accommodates']);
+                  $rating         = htmlspecialchars($row['rating']);
+                  $neighborhood   = htmlspecialchars($row['neighborhoodName']); 
+                  $roomType       = htmlspecialchars($row['roomTypeName']);
+            ?>
+            <div class="col">
+              <div class="card shadow-sm">
+                <img src="<?php echo $image_url; ?>" class="card-img-top" alt="<?php echo $name; ?>">
+                <div class="card-body">
+                  <h5 class="card-title"><?php echo $name; ?></h5>
+                  <p class="card-text"><?php echo $neighborhood; ?></p>
+                  <p class="card-text"><?php echo $roomType; ?></p>
+                  <p class="card-text">Accommodates <?php echo $accommodates; ?></p>
+                  <p class="card-text">
+                    <i class="bi bi-star-fill"></i> <?php echo $rating; ?>
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="btn-group">
+                      <button type="button" id="<?php echo $listing_id; ?>" 
+                              class="btn btn-sm btn-outline-secondary viewListing" 
+                              data-bs-toggle="modal" data-bs-target="#fakeAirbnbnModal">
+                        View
+                      </button>
+                    </div>
+                    <small class="text-muted">$<?php echo $price; ?></small>
+                  </div>
+                </div>
+              </div><!-- .card -->
+            </div><!-- .col -->
+            <?php } // end while ?>
+          </div><!-- .row -->
+
+        <?php else: ?>
+          <p>Sorry, no results - <a href="index.php">search again</a>.</p>
+        <?php endif; ?>
+
       </div><!-- .container -->
     </main>
 
@@ -154,7 +175,6 @@ $result = $conn->query($query);
       </div>
     </footer>
 
-    <!-- Modal for listing details -->
     <div class="modal fade modal-lg" id="fakeAirbnbnModal" tabindex="-1" 
          aria-labelledby="fakeAirbnbnModalLabel" aria-modal="true" role="dialog">
       <div class="modal-dialog">
@@ -164,7 +184,6 @@ $result = $conn->query($query);
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="modal-body">
-            <!-- Additional details or images can be loaded here via JS -->
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
